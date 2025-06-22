@@ -4,7 +4,7 @@ from aiohttp import ClientResponseError, ClientSession, ClientTimeout
 from aiohttp_socks import ProxyConnector
 from fake_useragent import FakeUserAgent
 from colorama import *
-from datetime import datetime
+from datetime import datetime, timedelta
 import asyncio, binascii, random, json, os, pytz
 
 wib = pytz.timezone('Asia/Jakarta')
@@ -64,7 +64,7 @@ class KiteAi:
         hours, remainder = divmod(seconds, 3600)
         minutes, seconds = divmod(remainder, 60)
         return f"{int(hours):02}:{int(minutes):02}:{int(seconds):02}"
-    
+
     def load_2captcha_key(self):
         try:
             with open("2captcha_key.txt", 'r') as file:
@@ -73,7 +73,7 @@ class KiteAi:
             return captcha_key
         except Exception as e:
             return None
-    
+
     def load_ai_agents(self):
         filename = "agents.json"
         try:
@@ -88,7 +88,7 @@ class KiteAi:
                 return []
         except json.JSONDecodeError:
             return []
-    
+
     async def load_proxies(self, use_proxy_choice: int):
         filename = "proxy.txt"
         try:
@@ -106,7 +106,7 @@ class KiteAi:
                     return
                 with open(filename, 'r') as f:
                     self.proxies = [line.strip() for line in f.read().splitlines() if line.strip()]
-            
+
             if not self.proxies:
                 self.log(f"{Fore.RED + Style.BRIGHT}No Proxies Found.{Style.RESET_ALL}")
                 return
@@ -115,7 +115,7 @@ class KiteAi:
                 f"{Fore.GREEN + Style.BRIGHT}Proxies Total  : {Style.RESET_ALL}"
                 f"{Fore.WHITE + Style.BRIGHT}{len(self.proxies)}{Style.RESET_ALL}"
             )
-        
+
         except Exception as e:
             self.log(f"{Fore.RED + Style.BRIGHT}Failed To Load Proxies: {e}{Style.RESET_ALL}")
             self.proxies = []
@@ -158,11 +158,11 @@ class KiteAi:
             return result_hex
         except Exception as e:
             return None
-    
+
     def generate_quiz_title(self):
         today = datetime.today().strftime('%Y-%m-%d')
         return f"daily_quiz_{today}"
-    
+
     def extract_cookies(self, raw_cookies: list):
         cookies_dict = {}
         try:
@@ -181,11 +181,11 @@ class KiteAi:
                             cookies_dict[name] = value
 
             cookie_header = "; ".join([f"{key}={value}" for key, value in cookies_dict.items()])
-            
+
             return cookie_header
         except Exception as e:
             raise Exception(f"Extract Cookies Data Failed: {str(e)}")
-        
+
     def setup_ai_agent(self, agents: list):
         agent = random.choice(agents)
 
@@ -194,7 +194,7 @@ class KiteAi:
         question = random.choice(agent["questionLists"])
 
         return agent_name, service_id, question
-        
+
     def generate_inference_payload(self, service_id: str, question: str):
         try:
             payload = {
@@ -210,7 +210,7 @@ class KiteAi:
             return payload
         except Exception as e:
             raise Exception(f"Generate Inference Payload Failed: {str(e)}")
-        
+
     def generate_receipt_payload(self, address: str, service_id: str, question: str, answer: str):
         try:
             payload = {
@@ -229,14 +229,14 @@ class KiteAi:
             return payload
         except Exception as e:
             raise Exception(f"Generate Receipt Payload Failed: {str(e)}")
-    
+
     def mask_account(self, account):
         try:
             mask_account = account[:6] + '*' * 6 + account[-6:]
             return mask_account
         except Exception as e:
             return None
-    
+
     async def print_timer(self):
         for remaining in range(random.randint(self.min_delay, self.max_delay), 0, -1):
             print(
@@ -249,7 +249,7 @@ class KiteAi:
                 flush=True
             )
             await asyncio.sleep(1)
-    
+
     def print_question(self):
         while True:
             faucet = input(f"{Fore.YELLOW + Style.BRIGHT}Auto Claim Kite Token Faucet? [y/n] -> {Style.RESET_ALL}").strip()
@@ -268,8 +268,8 @@ class KiteAi:
 
                 if choose in [1, 2, 3]:
                     proxy_type = (
-                        "With Proxyscrape Free" if choose == 1 else 
-                        "With Private" if choose == 2 else 
+                        "With Proxyscrape Free" if choose == 1 else
+                        "With Private" if choose == 2 else
                         "Without"
                     )
                     print(f"{Fore.GREEN + Style.BRIGHT}Run {proxy_type} Proxy Selected.{Style.RESET_ALL}")
@@ -313,13 +313,13 @@ class KiteAi:
                 print(f"{Fore.RED + Style.BRIGHT}Invalid input. Enter a number.{Style.RESET_ALL}")
 
         return faucet, choose, rotate
-    
+
     async def solve_recaptcha(self, proxy=None, retries=5):
         for attempt in range(retries):
             connector = ProxyConnector.from_url(proxy) if proxy else None
             try:
                 async with ClientSession(connector=connector, timeout=ClientTimeout(total=60)) as session:
-                    
+
                     if self.CAPTCHA_KEY is None:
                         return None
 
@@ -364,7 +364,7 @@ class KiteAi:
                     await asyncio.sleep(5)
                     continue
                 return None
-        
+
     async def user_signin(self, address: str, proxy=None, retries=5):
         url = f"{self.NEO_API}/signin"
         data = json.dumps({"eoa":address})
@@ -399,9 +399,9 @@ class KiteAi:
                     f"{Fore.MAGENTA+Style.BRIGHT}-{Style.RESET_ALL}"
                     f"{Fore.YELLOW+Style.BRIGHT} {str(e)} {Style.RESET_ALL}"
                 )
-        
+
         return None, None
-        
+
     async def user_data(self, address: str, proxy=None, retries=5):
         url = f"{self.OZONE_API}/me"
         headers = {
@@ -428,7 +428,7 @@ class KiteAi:
                 )
 
         return None
-        
+
     async def create_quiz(self, address: str, proxy=None, retries=5):
         url = f"{self.NEO_API}/quiz/create"
         data = json.dumps({"title":self.generate_quiz_title(), "num":1, "eoa":address})
@@ -459,7 +459,7 @@ class KiteAi:
                 )
 
         return None
-        
+
     async def get_quiz(self, address: str, quiz_id: int, proxy=None, retries=5):
         url = f"{self.NEO_API}/quiz/get?id={quiz_id}&eoa={address}"
         headers = {
@@ -488,7 +488,7 @@ class KiteAi:
                 )
 
         return None
-            
+
     async def submit_quiz(self, address: str, quiz_id: int, question_id: int, quiz_answer: str, proxy=None, retries=5):
         url = f"{self.NEO_API}/quiz/submit"
         data = json.dumps({"quiz_id":quiz_id, "question_id":question_id, "answer":quiz_answer, "finish":True, "eoa":address})
@@ -520,7 +520,7 @@ class KiteAi:
                 )
 
         return None
-            
+
     async def claim_faucet(self, address: str, recaptcha_token: str, proxy=None, retries=5):
         url = f"{self.OZONE_API}/blockchain/faucet-transfer"
         headers = {
@@ -551,7 +551,7 @@ class KiteAi:
                 )
 
         return None
-            
+
     async def token_balance(self, address: str, proxy=None, retries=5):
         url = f"{self.OZONE_API}/me/balance"
         headers = {
@@ -578,7 +578,7 @@ class KiteAi:
                 )
 
         return None
-            
+
     async def stake_token(self, address: str, amount: float, proxy=None, retries=5):
         url = f"{self.OZONE_API}/subnet/delegate"
         data = json.dumps({"subnet_address":self.KITE_AI_SUBNET, "amount":amount})
@@ -608,7 +608,7 @@ class KiteAi:
                 )
 
         return None
-            
+
     async def claim_stake_rewards(self, address: str, proxy=None, retries=5):
         url = f"{self.OZONE_API}/subnet/claim-rewards"
         data = json.dumps({"subnet_address":self.KITE_AI_SUBNET})
@@ -638,7 +638,7 @@ class KiteAi:
                 )
 
         return None
-            
+
     async def agent_inference(self, address: str, service_id: str, question: str, use_proxy: bool, rotate_proxy: bool, proxy=None, retries=5):
         url = f"{self.OZONE_API}/agent/inference"
         data = json.dumps(self.generate_inference_payload(service_id, question))
@@ -688,7 +688,7 @@ class KiteAi:
                 )
 
         return None
-            
+
     async def submit_receipt(self, address: str, sa_address: str, service_id: str, question: str, answer: str, proxy=None, retries=5):
         url = f"{self.NEO_API}/submit_receipt"
         data = json.dumps(self.generate_receipt_payload(sa_address, service_id, question, answer))
@@ -720,7 +720,7 @@ class KiteAi:
                 )
 
         return None
-            
+
     async def process_user_signin(self, address: str, use_proxy: bool, rotate_proxy: bool):
         while True:
             proxy = self.get_next_proxy_for_account(address) if use_proxy else None
@@ -739,32 +739,32 @@ class KiteAi:
                     f"{Fore.GREEN+Style.BRIGHT} Login Success {Style.RESET_ALL}"
                 )
                 return True
-            
+
             if rotate_proxy:
                 proxy = self.rotate_proxy_for_account(address)
                 await asyncio.sleep(5)
                 continue
 
             return False
-        
+
     async def process_accounts(self, address: str, faucet: bool, use_proxy: bool, rotate_proxy: bool):
         signed = await self.process_user_signin(address, use_proxy, rotate_proxy)
         if signed:
             proxy = self.get_next_proxy_for_account(address) if use_proxy else None
-        
+
             user = await self.user_data(address, proxy)
             if not user:
                 return
-            
+
             username = user.get("data", {}).get("profile", {}).get("username", "Unknown")
             sa_address = user.get("data", {}).get("profile", {}).get("smart_account_address", "Undifined")
             balance = user.get("data", {}).get("profile", {}).get("total_xp_points", 0)
-            
+
             self.log(
                 f"{Fore.CYAN+Style.BRIGHT}Username  :{Style.RESET_ALL}"
                 f"{Fore.WHITE+Style.BRIGHT} {username} {Style.RESET_ALL}"
             )
-            
+
             self.log(
                 f"{Fore.CYAN+Style.BRIGHT}SA Address:{Style.RESET_ALL}"
                 f"{Fore.WHITE+Style.BRIGHT} {self.mask_account(sa_address)} {Style.RESET_ALL}"
@@ -999,9 +999,9 @@ class KiteAi:
             if not agents:
                 self.log(f"{Fore.RED + Style.BRIGHT}No Agents Loaded.{Style.RESET_ALL}")
                 return
-            
+
             self.agent_lists = agents
-            
+
             faucet, use_proxy_choice, rotate_proxy = self.print_question()
 
             while True:
@@ -1018,7 +1018,10 @@ class KiteAi:
 
                 if use_proxy:
                     await self.load_proxies(use_proxy_choice)
-                
+
+                started_at = datetime.now()
+                next_run_at = started_at + timedelta(days=1)
+
                 separator = "=" * 25
                 for address in accounts:
                     if address:
@@ -1034,7 +1037,7 @@ class KiteAi:
                                 f"{Fore.RED+Style.BRIGHT} Invalid Private Key or Libraries Version Not Supported {Style.RESET_ALL}"
                             )
                             continue
-                        
+
                         auth_token = self.generate_auth_token(address)
                         if not auth_token:
                             self.log(
@@ -1042,14 +1045,19 @@ class KiteAi:
                                 f"{Fore.RED+Style.BRIGHT} Generate Auth Token Failed, Check Your Cryptography Library {Style.RESET_ALL}                  "
                             )
                             continue
-                        
+
                         self.auth_tokens[address] = auth_token
-                        
+
                         await self.process_accounts(address, faucet, use_proxy, rotate_proxy)
                         await asyncio.sleep(3)
 
                 self.log(f"{Fore.CYAN + Style.BRIGHT}={Style.RESET_ALL}"*72)
-                seconds = 24 * 60 * 60
+
+                now = datetime.now()
+                seconds = int((next_run_at - now).total_seconds())
+                elapsed_seconds = now - started_at
+                formatted_elapsed = self.format_seconds(elapsed_seconds)
+
                 while seconds > 0:
                     formatted_time = self.format_seconds(seconds)
                     print(
@@ -1057,7 +1065,7 @@ class KiteAi:
                         f"{Fore.WHITE+Style.BRIGHT} {formatted_time} {Style.RESET_ALL}"
                         f"{Fore.CYAN+Style.BRIGHT}... ]{Style.RESET_ALL}"
                         f"{Fore.WHITE+Style.BRIGHT} | {Style.RESET_ALL}"
-                        f"{Fore.BLUE+Style.BRIGHT}All Accounts Have Been Processed.{Style.RESET_ALL}",
+                        f"{Fore.BLUE+Style.BRIGHT}All Accounts Have Been Processed. Elapsed time {formatted_elapsed}{Style.RESET_ALL}",
                         end="\r"
                     )
                     await asyncio.sleep(1)
@@ -1078,5 +1086,5 @@ if __name__ == "__main__":
         print(
             f"{Fore.CYAN + Style.BRIGHT}[ {datetime.now().astimezone(wib).strftime('%x %X %Z')} ]{Style.RESET_ALL}"
             f"{Fore.WHITE + Style.BRIGHT} | {Style.RESET_ALL}"
-            f"{Fore.RED + Style.BRIGHT}[ EXIT ] Kite Ai Ozone - BOT{Style.RESET_ALL}                                       "                              
+            f"{Fore.RED + Style.BRIGHT}[ EXIT ] Kite Ai Ozone - BOT{Style.RESET_ALL}                                       "
         )
